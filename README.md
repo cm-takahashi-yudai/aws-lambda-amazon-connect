@@ -81,20 +81,20 @@ Lambda関数のコードをS3バケットにアップロードします。
 
 ```
 aws cloudformation package \
-	--template-file template.yaml \
-	--output-template-file template-output.yaml \
-	--s3-bucket ${PROJECT_NAME}-artifact
+    --template-file template.yaml \
+    --output-template-file template-output.yaml \
+    --s3-bucket ${PROJECT_NAME}-artifact
 ```
 
 AWSのリソースをデプロイします。
 
 ```
 aws cloudformation deploy \
-	--template-file template-output.yaml \
-	--stack-name ${PROJECT_NAME}-stack \
-	--parameter-overrides ProjectName=${PROJECT_NAME} DestinationPhoneNumber=${DESTINATION_PHONE_NUMBER} SourcePhoneNumber=${SOURCE_PHONE_NUMBER} InstanceId=${INSTANCE_ID} ContactFlowId=${CONTACT_FLOW_ID} \
-	--no-fail-on-empty-changeset \
-	--capabilities CAPABILITY_NAMED_IAM
+    --template-file template-output.yaml \
+    --stack-name ${PROJECT_NAME}-stack \
+    --parameter-overrides ProjectName=${PROJECT_NAME} DestinationPhoneNumber=${DESTINATION_PHONE_NUMBER} SourcePhoneNumber=${SOURCE_PHONE_NUMBER} InstanceId=${INSTANCE_ID} ContactFlowId=${CONTACT_FLOW_ID} \
+    --no-fail-on-empty-changeset \
+    --capabilities CAPABILITY_NAMED_IAM
 ```
 
 ## 実行
@@ -103,9 +103,9 @@ Lambda関数を実行して意図的にエラーを発生させます。
 
 ```
 aws lambda invoke log \
-	--invocation-type Event \
+    --invocation-type Event \
     --function-name ${PROJECT_NAME}-run-error \
-	--region ap-northeast-1 \
+    --region ap-northeast-1 \
     --payload '{}'
 ```
 
@@ -113,9 +113,9 @@ aws lambda invoke log \
 
 ```
 aws lambda invoke log \
-	--invocation-type Event \
+    --invocation-type Event \
     --function-name ${PROJECT_NAME}-call-error-message \
-	--region ap-northeast-1 \
+    --region ap-northeast-1 \
     --payload '{"Records": [{"Sns": {"Message": "{\"AWSAccountId\": \"12345\"}"}}]}'
 ```
 
