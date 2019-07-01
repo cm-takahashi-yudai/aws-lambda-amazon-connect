@@ -1,0 +1,42 @@
+# Windows
+Thumbs.db
+ehthumbs.db
+ehthumbs_vista.db
+
+# OSX
+*.DS_Store
+.AppleDouble
+.LSOverride
+
+# Thumbnails
+._*
+
+# Visual Studio Code
+.vscode/*
+!.vscode/settings.default.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.history
+
+# Environments
+.env
+.venv
+
+# Build and Dist
+build
+dist
+
+# Pytest
+__pycache__/
+.pytest_cache/
+htmlcov/
+
+# Temporary
+tmp
+
+# Packeage
+template-output.yaml
+
+# Log
+log

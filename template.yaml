@@ -1,0 +1,128 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Parameters:
+  ProjectName:
+    Type: String
+  DestinationPhoneNumber:
+    Type: String
+  SourcePhoneNumber:
+    Type: String
+  InstanceId:
+    Type: String
+  ContactFlowId:
+    Type: String
+Globals:
+  Function:
+    Runtime: python3.7
+    MemorySize: 128
+    Timeout: 10
+    Environment:
+      Variables:
+        TZ: Asia/Tokyo
+Resources:
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: lambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: /
+      Policies:
+        - PolicyName:
+            Fn::Sub: ${ProjectName}-lambda-execution-role
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: '*'
+              - Effect: "Allow"
+                Action:
+                - "sns:Publish"
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - connect:StartOutboundVoiceContact
+                  - connect:StopContact
+                Resource: '*'
+  CallErrorMessageFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName:
+        Fn::Sub: ${ProjectName}-call-error-message
+      CodeUri: src/lambda
+      Handler: call_error_message.lambda_handler
+      Role:
+        Fn::GetAtt:
+          - LambdaExecutionRole
+          - Arn
+      Environment:
+        Variables:
+          DestinationPhoneNumber:
+            Ref: DestinationPhoneNumber
+          SourcePhoneNumber:
+            Ref: SourcePhoneNumber
+          InstanceId:
+            Ref: InstanceId
+          ContactFlowId:
+            Ref: ContactFlowId
+      Events:
+        CloudWatchAlarmTopic:
+          Type: SNS
+          Properties:
+            Topic:
+              Ref: CloudWatchAlarmTopic
+  CallErrorMessageLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName:
+        Fn::Sub: /aws/lambda/${CallErrorMessageFunction}
+      RetentionInDays: 30
+  RunErrorFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName:
+        Fn::Sub: ${ProjectName}-run-error
+      CodeUri: src/lambda
+      Handler: run_error.lambda_handler
+      Role:
+        Fn::GetAtt:
+          - LambdaExecutionRole
+          - Arn
+  RunErrorLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName:
+        Fn::Sub: /aws/lambda/${RunErrorFunction}
+      RetentionInDays: 30
+  ErrorsAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName:
+        Fn::Sub: ${ProjectName}-errors
+      Namespace: AWS/Lambda
+      Dimensions:
+        - Name: FunctionName
+          Value: !Sub ${ProjectName}-run-error
+      MetricName: Errors
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Period: 60
+      EvaluationPeriods: 1
+      Statistic: Sum
+      Threshold: 1
+      AlarmActions:
+        - Ref: CloudWatchAlarmTopic
+      TreatMissingData: notBreaching
+  CloudWatchAlarmTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName:
+        Fn::Sub: ${ProjectName}-cloud-watch-alarm
+      TopicName:
+        Fn::Sub: ${ProjectName}-cloud-watch-alarm
